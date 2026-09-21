@@ -8,6 +8,7 @@ import html
 import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlencode
 
 from .storage import Repository, create_repository
 
@@ -60,6 +61,18 @@ tr:last-child td{border-bottom:none}
 padding:1px 7px;border-radius:6px;font-size:11px;margin:1px 2px 1px 0}
 .reasons{color:var(--mut);font-size:12px}
 footer{color:var(--mut);font-size:12px;padding:20px 28px;text-align:center}
+nav.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+nav.tabs a{background:var(--card);border:1px solid #24313f;color:#cddcec;padding:8px 14px;
+border-radius:10px;text-decoration:none;font-weight:600;font-size:13px}
+nav.tabs a.active{background:#21a0ff;color:#04101c;border-color:#21a0ff}
+form.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:16px}
+form.filters label{display:flex;flex-direction:column;font-size:11px;color:var(--mut);gap:4px}
+form.filters input,form.filters select{background:#13202c;border:1px solid #2a3947;color:var(--ink);
+padding:7px 9px;border-radius:8px;font-size:13px;min-width:130px}
+form.filters button{background:#21a0ff;color:#04101c;border:0;padding:8px 16px;border-radius:8px;
+font-weight:700;cursor:pointer}
+form.filters a.export{color:#9fc0e0;font-size:13px;text-decoration:none;padding:8px 12px;
+border:1px solid #2a3947;border-radius:8px}
 """
 
 
@@ -72,21 +85,122 @@ def _tags(items: list[str], limit: int = 8) -> str:
     return "".join(f'<span class="tag">{html.escape(x)}</span>' for x in items[:limit])
 
 
-def render_html(db: Repository) -> str:
-    leads = db.leads()
-    tenders = db.tenders()
-    offers = db.competitor_offers()
+def parse_filters(query_string: str) -> dict[str, str]:
+    """Разбирает строку запроса в словарь фильтров."""
+    from urllib.parse import parse_qs
+
+    parsed = parse_qs(query_string or "", keep_blank_values=False)
+    return {key: values[0] for key, values in parsed.items() if values and values[0]}
+
+
+def _contains(text: str, needle: str) -> bool:
+    return needle.lower() in (text or "").lower()
+
+
+def filter_leads(leads: list[dict], filters: dict) -> list[dict]:
+    tier, region = filters.get("tier", ""), filters.get("region", "")
+    category, query = filters.get("category", ""), filters.get("q", "")
+    result = []
+    for lead in leads:
+        if tier and lead["tier"] != tier:
+            continue
+        if region and lead["region"] != region:
+            continue
+        if category and category not in lead["recommended_categories"]:
+            continue
+        if query and not (_contains(lead["name"], query)
+                          or _contains(lead["region"], query)
+                          or _contains(lead["city"], query)):
+            continue
+        result.append(lead)
+    return result
+
+
+def filter_tenders(tenders: list[dict], filters: dict) -> list[dict]:
+    region, query = filters.get("region", ""), filters.get("q", "")
+    result = []
+    for tender in tenders:
+        if region and tender["region"] != region:
+            continue
+        if query and not (_contains(tender["title"], query)
+                          or _contains(tender["customer"], query)):
+            continue
+        result.append(tender)
+    return result
+
+
+def filter_offers(offers: list[dict], filters: dict) -> list[dict]:
+    competitor, query = filters.get("competitor", ""), filters.get("q", "")
+    result = []
+    for offer in offers:
+        if competitor and offer["competitor"] != competitor:
+            continue
+        if query and not _contains(offer["product_name"], query):
+            continue
+        result.append(offer)
+    return result
+
+
+def _options(values: list[str], selected: str) -> str:
+    out = ['<option value="">все</option>']
+    for value in sorted(set(values)):
+        mark = " selected" if value == selected else ""
+        out.append(f'<option value="{html.escape(value)}"{mark}>{html.escape(value)}</option>')
+    return "".join(out)
+
+
+def _filter_form(view: str, filters: dict, export_path: str) -> str:
+    q = html.escape(filters.get("q", ""))
+    fields = [f'<label>Поиск<input name="q" value="{q}"></label>']
+    if view in ("leads", "tenders"):
+        fields.append(f'<label>Регион<select name="region">'
+                      f'{_options([], filters.get("region", ""))}</select></label>')
+    if view == "leads":
+        fields.append(
+            f'<label>Уровень<select name="tier">'
+            f'<option value="">все</option>'
+            f'<option value="hot"{" selected" if filters.get("tier") == "hot" else ""}>HOT</option>'
+            f'<option value="warm"{" selected" if filters.get("tier") == "warm" else ""}>WARM</option>'
+            f'<option value="cold"{" selected" if filters.get("tier") == "cold" else ""}>COLD</option>'
+            f'</select></label>')
+    if view == "competitors":
+        fields.append('<label>Конкурент<select name="competitor">'
+                      f'{_options([], filters.get("competitor", ""))}</select></label>')
+    export = f'<a class="export" href="{export_path}?type={view}&{urlencode(filters)}">⬇ Excel/CSV</a>'
+    return (f'<form class="filters" method="get">'
+            f'<input type="hidden" name="view" value="{html.escape(view)}">'
+            f'{"".join(fields)}<button type="submit">Фильтр</button>{export}</form>')
+
+
+def _load_comparison() -> dict | None:
+    import json
+
+    from . import config
+
+    path = config.RUNTIME_DIR / "reports" / "price_comparison.json"
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return None
+
+
+def render_html(db: Repository, filters: dict | None = None,
+                export_path: str = "/export") -> str:
+    filters = filters or {}
+    view = filters.get("view", "leads")
+    leads_all = db.leads()
+    tenders_all = db.tenders()
+    offers_all = db.competitor_offers()
     meta = db.run_meta()
     stats = db.stats()
-    hot = sum(1 for x in leads if x["tier"] == "hot")
-    warm = sum(1 for x in leads if x["tier"] == "warm")
+    hot = sum(1 for x in leads_all if x["tier"] == "hot")
+    warm = sum(1 for x in leads_all if x["tier"] == "warm")
 
     cards = [
-        (stats["leads"], "Лидов"),
-        (hot, "HOT"),
-        (warm, "WARM"),
-        (stats["clinics"], "Организаций"),
-        (stats["tenders"], "Тендеров"),
+        (stats["leads"], "Лидов"), (hot, "HOT"), (warm, "WARM"),
+        (stats["clinics"], "Организаций"), (stats["tenders"], "Тендеров"),
         (stats["competitor_offers"], "Предложений конкурентов"),
     ]
     cards_html = "".join(
@@ -94,45 +208,101 @@ def render_html(db: Repository) -> str:
         for v, l in cards
     )
 
-    lead_rows = ""
-    for lead in leads:
-        reasons = "<br>".join(html.escape(r) for r in lead["reasons"][:3])
-        lead_rows += (
-            f"<tr><td class='score'>{lead['score']}</td><td>{_badge(lead['tier'])}</td>"
-            f"<td><b>{html.escape(lead['name'])}</b><div class='reasons'>"
-            f"{html.escape(lead['city'])}, {html.escape(lead['region'])}</div></td>"
-            f"<td>{_tags(lead['recommended_categories'])}</td>"
-            f"<td class='reasons'>{reasons}</td></tr>"
-        )
+    region_values = [x["region"] for x in leads_all + tenders_all if x.get("region")]
+    competitor_values = [o["competitor"] for o in offers_all]
+    filter_form = _filter_form(view, filters, export_path)
+    # Дополняем select реальными значениями (после построения формы заменяем «все»).
+    filter_form = filter_form.replace(
+        '<select name="region"><option value="">все</option></select>',
+        f'<select name="region">{_options(region_values, filters.get("region", ""))}</select>')
+    filter_form = filter_form.replace(
+        '<select name="competitor"><option value="">все</option></select>',
+        f'<select name="competitor">{_options(competitor_values, filters.get("competitor", ""))}</select>')
 
-    tender_rows = ""
-    for t in tenders:
-        price = f"{t['price']:,.0f}".replace(",", " ")
-        tender_rows += (
-            f"<tr><td>{html.escape(t['published_at'])}</td>"
-            f"<td>{html.escape(t['region'])}</td><td>{price}</td>"
-            f"<td>{_tags(t['matched_categories'], 4)}</td>"
-            f"<td class='reasons'>{html.escape(t['customer'])}</td></tr>"
-        )
+    tabs = [
+        ("leads", "Лиды"), ("tenders", "Тендеры"),
+        ("competitors", "Конкуренты"), ("compare", "Сравнение цен"),
+    ]
+    tabs_html = "".join(
+        f'<a class="{"active" if view == key else ""}" '
+        f'href="?view={key}">{html.escape(label)}</a>'
+        for key, label in tabs
+    )
 
-    offer_rows = ""
-    for o in offers:
-        price = f"{o['price']:,.0f}".replace(",", " ")
-        offer_rows += (
-            f"<tr><td>{html.escape(o['competitor'])}</td>"
-            f"<td>{html.escape(o['product_name'])}</td><td>{price}</td>"
-            f"<td>{html.escape(o['region'])}</td>"
-            f"<td class='reasons'>{html.escape(o['promo'])}</td></tr>"
-        )
-
-    offers_block = ""
-    if offer_rows:
-        offers_block = (
-            "<h2>Предложения конкурентов (модуль 2)</h2><table>"
-            "<tr><th>Конкурент</th><th>Товар</th><th>Цена, ₽</th>"
+    body = ""
+    if view == "leads":
+        leads = filter_leads(leads_all, filters)
+        rows = ""
+        for lead in leads:
+            reasons = "<br>".join(html.escape(r) for r in lead["reasons"][:3])
+            rows += (
+                f"<tr><td class='score'>{lead['score']}</td><td>{_badge(lead['tier'])}</td>"
+                f"<td><b>{html.escape(lead['name'])}</b><div class='reasons'>"
+                f"{html.escape(lead['city'])}, {html.escape(lead['region'])}</div></td>"
+                f"<td>{_tags(lead['recommended_categories'])}</td>"
+                f"<td class='reasons'>{reasons}</td></tr>")
+        body = (
+            f"<h2>Лиды — показано {len(leads)} из {len(leads_all)}</h2>"
+            "<table><tr><th>Балл</th><th>Уровень</th><th>Организация</th>"
+            "<th>Категории каталога</th><th>Обоснование</th></tr>"
+            f"{rows or '<tr><td colspan=5>Нет данных</td></tr>'}</table>")
+    elif view == "tenders":
+        tenders = filter_tenders(tenders_all, filters)
+        rows = ""
+        for t in tenders:
+            price = f"{t['price']:,.0f}".replace(",", " ")
+            rows += (
+                f"<tr><td>{html.escape(t['published_at'])}</td>"
+                f"<td>{html.escape(t['region'])}</td><td>{price}</td>"
+                f"<td>{_tags(t['matched_categories'], 4)}</td>"
+                f"<td class='reasons'>{html.escape(t['customer'])}</td></tr>")
+        body = (
+            f"<h2>Тендеры — показано {len(tenders)} из {len(tenders_all)}</h2>"
+            "<table><tr><th>Публикация</th><th>Регион</th><th>НМЦК, ₽</th>"
+            "<th>Категории</th><th>Заказчик</th></tr>"
+            f"{rows or '<tr><td colspan=5>Нет данных</td></tr>'}</table>")
+    elif view == "competitors":
+        offers = filter_offers(offers_all, filters)
+        rows = ""
+        for o in offers:
+            price = f"{o['price']:,.0f}".replace(",", " ")
+            rows += (
+                f"<tr><td>{html.escape(o['competitor'])}</td>"
+                f"<td>{html.escape(o['product_name'])}</td><td>{price}</td>"
+                f"<td>{html.escape(o['region'])}</td>"
+                f"<td class='reasons'>{html.escape(o['promo'])}</td></tr>")
+        body = (
+            f"<h2>Предложения конкурентов — показано {len(offers)} из {len(offers_all)}</h2>"
+            "<table><tr><th>Конкурент</th><th>Товар</th><th>Цена, ₽</th>"
             "<th>Регион</th><th>Акция</th></tr>"
-            f"{offer_rows}</table>"
-        )
+            f"{rows or '<tr><td colspan=5>Нет данных</td></tr>'}</table>")
+    else:
+        report = _load_comparison()
+        if not report:
+            body = ("<h2>Сравнение цен</h2><p class='reasons'>Нет отчёта. "
+                    "Запустите: <code>python run.py compare --live</code></p>")
+        else:
+            pos_rows = "".join(
+                f"<tr><td>{html.escape(str(r['category']))}</td><td>{r['pairs']}</td>"
+                f"<td>{r['medax_avg']:,.0f}</td><td>{r['competitor_avg']:,.0f}</td>"
+                f"<td>{r['delta_pct']:+.1f}%</td></tr>"
+                for r in report.get("positioning", []))
+            pair_rows = "".join(
+                f"<tr><td>{html.escape(str(m['category']))}</td>"
+                f"<td>{html.escape(m['medax_name'][:45])}</td><td>{m['medax_price']:,.0f}</td>"
+                f"<td>{html.escape(m['competitor'])}</td>"
+                f"<td>{html.escape(m['competitor_name'][:40])}</td>"
+                f"<td>{m['competitor_price']:,.0f}</td><td>{html.escape(m['cheaper'])}</td></tr>"
+                for m in report.get("matches", [])[:50])
+            body = (
+                "<h2>Позиционирование по категориям</h2>"
+                "<table><tr><th>Категория</th><th>Пар</th><th>MedAX, ср.</th>"
+                "<th>Конкуренты, ср.</th><th>Δ</th></tr>"
+                f"{pos_rows or '<tr><td colspan=5>Нет данных</td></tr>'}</table>"
+                "<h2>Пары товаров</h2>"
+                "<table><tr><th>Категория</th><th>MedAX</th><th>₽</th><th>Конкурент</th>"
+                "<th>Товар</th><th>₽</th><th>Дешевле</th></tr>"
+                f"{pair_rows or '<tr><td colspan=7>Уверенных пар нет</td></tr>'}</table>")
 
     return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -142,15 +312,44 @@ def render_html(db: Repository) -> str:
 сформировано: {html.escape(meta.get('generated_at', 'н/д'))} • v{html.escape(meta.get('version', ''))}</div>
 </header><div class="wrap">
 <div class="cards">{cards_html}</div>
-<h2>Лиды (топ по скорингу)</h2>
-<table><tr><th>Балл</th><th>Уровень</th><th>Организация</th>
-<th>Категории каталога</th><th>Обоснование</th></tr>{lead_rows or '<tr><td colspan=5>Нет данных</td></tr>'}</table>
-<h2>Активные тендеры</h2>
-<table><tr><th>Публикация</th><th>Регион</th><th>НМЦК, ₽</th>
-<th>Категории</th><th>Заказчик</th></tr>{tender_rows or '<tr><td colspan=5>Нет данных</td></tr>'}</table>
-{offers_block}
-</div><footer>MedAX Radar v4.0 • demo • API: <code>/api/report</code></footer>
+<nav class="tabs">{tabs_html}</nav>
+{filter_form}
+{body}
+</div><footer>MedAX Radar v4.0 • данные: открытые реестры и публичные каталоги</footer>
 </body></html>"""
+
+
+def export_csv(db: Repository, type_: str, filters: dict | None = None) -> tuple[str, str]:
+    """Возвращает (имя_файла, CSV-текст) для выгрузки в Excel."""
+    import csv
+    import io
+
+    filters = filters or {}
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, delimiter=";")
+    if type_ == "leads":
+        writer.writerow(["score", "tier", "name", "region", "city", "phone", "email",
+                         "categories", "reasons"])
+        for lead in filter_leads(db.leads(), filters):
+            writer.writerow([lead["score"], lead["tier"], lead["name"], lead["region"],
+                             lead["city"], lead["contacts"].get("phone", ""),
+                             lead["contacts"].get("email", ""),
+                             ", ".join(lead["recommended_categories"]),
+                             " | ".join(lead["reasons"])])
+    elif type_ == "tenders":
+        writer.writerow(["published_at", "region", "price", "title", "customer", "url"])
+        for t in filter_tenders(db.tenders(), filters):
+            writer.writerow([t["published_at"], t["region"], t["price"], t["title"],
+                             t["customer"], t["url"]])
+    elif type_ == "competitors":
+        writer.writerow(["competitor", "product_name", "price", "currency", "category",
+                         "region", "captured_at", "url"])
+        for o in filter_offers(db.competitor_offers(), filters):
+            writer.writerow([o["competitor"], o["product_name"], o["price"], o["currency"],
+                             o["category"], o["region"], o["captured_at"], o["url"]])
+    else:
+        raise ValueError(f"Неизвестный тип выгрузки: {type_!r}")
+    return f"{type_}.csv", buffer.getvalue()
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -173,18 +372,32 @@ class _Handler(BaseHTTPRequestHandler):
             self.headers.get("Authorization"), self.auth_user, self.auth_password
         )
 
+    def _send_csv(self, filename: str, text: str) -> None:
+        # utf-8-sig (BOM) — Excel корректно открывает кириллицу.
+        data = ("\ufeff" + text).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/csv; charset=utf-8")
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_GET(self) -> None:  # noqa: N802
+        from urllib.parse import urlparse
+
         if not self._authorized():
             self.send_response(401)
             self.send_header("WWW-Authenticate", 'Basic realm="MedAX Radar"')
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
-        if self.path.startswith("/health"):
+        path = urlparse(self.path).path
+        filters = parse_filters(urlparse(self.path).query)
+        if path.startswith("/health"):
             payload = {"status": "ok", "stats": self.db.stats()}
             self._send(json.dumps(payload, ensure_ascii=False),
                        "application/json; charset=utf-8")
-        elif self.path.startswith("/api/report"):
+        elif path.startswith("/api/report"):
             payload = {
                 "run": self.db.run_meta(),
                 "stats": self.db.stats(),
@@ -194,8 +407,15 @@ class _Handler(BaseHTTPRequestHandler):
             }
             self._send(json.dumps(payload, ensure_ascii=False, indent=2),
                        "application/json; charset=utf-8")
-        elif self.path in ("/", "/index.html"):
-            self._send(render_html(self.db))
+        elif path == "/export":
+            try:
+                filename, text = export_csv(self.db, filters.get("type", "leads"), filters)
+            except ValueError:
+                self._send("<h1>400 bad export type</h1>", code=400)
+                return
+            self._send_csv(filename, text)
+        elif path in ("/", "/index.html"):
+            self._send(render_html(self.db, filters, export_path="/export"))
         else:
             self._send("<h1>404</h1>", code=404)
 
