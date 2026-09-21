@@ -26,8 +26,8 @@
       "region": "",
       "enabled": true,
       "follow_product_links": false,
-      "product_link_pattern": "\\.html$",
-      "max_product_pages": 40
+      "product_link_pattern": "(kompressor|aspirat|implant|endodont|nakonech|ustanovk|steriliz).*\\.html$",
+      "max_product_pages": 30
     },
     {
       "name": "MEDLIGA",

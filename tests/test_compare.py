@@ -42,9 +42,12 @@ class TestMedaxCatalog(unittest.TestCase):
 class TestCompare(unittest.TestCase):
     def test_tokenize_and_jaccard(self) -> None:
         self.assertEqual(tokenize("Стоматологическая установка Mercury 330"),
-                         {"стоматологическая", "установка", "mercury", "330"})
+                         {"стома", "устан", "mercu", "330"})
         self.assertGreater(jaccard({"a", "b"}, {"a", "b"}), 0.9)
         self.assertEqual(jaccard(set(), {"a"}), 0.0)
+
+    def test_stemming_matches_word_forms(self) -> None:
+        self.assertTrue(tokenize("Аспиратор") & tokenize("Аспирационная система"))
 
     def test_match_same_category(self) -> None:
         ours = [{"name": "Стоматологическая установка Mercury 330", "price": 157000,

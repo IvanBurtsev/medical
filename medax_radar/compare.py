@@ -21,8 +21,15 @@ _STOP = {
 }
 
 
+def _stem(token: str) -> str:
+    """Грубое усечение основы: 'аспиратор'/'аспирационная' -> 'аспи'."""
+    return token[:5] if len(token) > 5 else token
+
+
 def tokenize(name: str) -> set[str]:
-    return {t for t in _TOKEN_RE.findall(name.lower()) if t not in _STOP}
+    return {
+        _stem(t) for t in _TOKEN_RE.findall(name.lower()) if t not in _STOP
+    }
 
 
 def jaccard(a: set[str], b: set[str]) -> float:
