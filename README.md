@@ -174,6 +174,7 @@ cp deploy/.env.prod.example .env   # заполнить MEDAX_DOMAIN, MEDAX_AUTH
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+Виртуальный хостинг (без Docker, через Python CGI) — `docs/09_SHARED_HOSTING.md`.
 Выбор и настройка бюджетного хостинга — `docs/08_HOSTING.md`.
 Для продакшена можно переключиться на PostgreSQL: `MEDAX_DB_BACKEND=postgres`
 и `MEDAX_DATABASE_URL=postgresql://...`. Подробнее — `docs/07_DEPLOYMENT.md`.
