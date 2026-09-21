@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "note": "Сайты конкурентов для модуля 2. Сбор только публичных страниц каталога. Обязательно соблюдаются robots.txt и rate limiting. Включайте сайт (enabled: true) только после проверки его robots.txt и по согласованию с юристом.",
+    "schema": {
+      "name": "Название конкурента",
+      "base_url": "Корень сайта (используется для allowlist домена и robots.txt)",
+      "catalog_urls": "Список публичных URL каталога для обхода",
+      "region": "Регион конкурента (необязательно)",
+      "enabled": "true/false — участвует ли сайт в live-сборе"
+    }
+  },
+  "allowlist_enforced": true,
+  "rate_limit_per_sec": 0.5,
+  "crawl_delay_respected": true,
+  "sites": [
+    {
+      "name": "Пример конкурента (замените)",
+      "base_url": "https://example-competitor-1.ru",
+      "catalog_urls": [
+        "https://example-competitor-1.ru/catalog/"
+      ],
+      "region": "Ставропольский край",
+      "enabled": false
+    },
+    {
+      "name": "Пример конкурента 2 (замените)",
+      "base_url": "https://example-competitor-2.ru",
+      "catalog_urls": [
+        "https://example-competitor-2.ru/catalog/stomatologiya/"
+      ],
+      "region": "Ростовская область",
+      "enabled": false
+    }
+  ]
+}

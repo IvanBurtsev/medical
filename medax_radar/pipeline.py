@@ -109,8 +109,8 @@ def _offer_from_payload(payload: dict[str, Any]) -> CompetitorOffer:
     return offer
 
 
-def _collect(include_competitors: bool) -> tuple[list[Clinic], list[Tender],
-                                                 list[CompetitorOffer], int, list[dict]]:
+def _collect(include_competitors: bool, live: bool = False) -> tuple[list[Clinic], list[Tender],
+                                                                     list[CompetitorOffer], int, list[dict]]:
     clinics_raw: list[Clinic] = []
     tenders: list[Tender] = []
     offers: list[CompetitorOffer] = []
@@ -130,7 +130,7 @@ def _collect(include_competitors: bool) -> tuple[list[Clinic], list[Tender],
             continue
 
         try:
-            records = adapter_cls().fetch()
+            records = adapter_cls(live=live).fetch()
         except Exception as exc:  # noqa: BLE001 - фиксируем сбой источника
             logger.warning("Источник %s упал: %s", source_key, exc)
             health.append({
@@ -169,6 +169,7 @@ def run(
     include_competitors: bool = False,
     reset: bool = True,
     verbose: bool = False,
+    live: bool = False,
 ) -> dict[str, Any]:
     """Выполняет полный цикл и возвращает сводку.
 
@@ -184,7 +185,7 @@ def run(
     if reset:
         repo.clear()
 
-    clinics_raw, tenders, offers, skipped, health = _collect(include_competitors)
+    clinics_raw, tenders, offers, skipped, health = _collect(include_competitors, live=live)
     clinics = merge_clinics(clinics_raw)
     logger.info("Дедупликация: %d -> %d", len(clinics_raw), len(clinics))
 

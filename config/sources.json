@@ -33,13 +33,13 @@
       "description": "Госзакупки 44-ФЗ/223-ФЗ на медицинское оборудование. Прямые возможности для MedAX."
     },
     "competitor_sites": {
-      "enabled": false,
+      "enabled": true,
       "live": false,
       "kind": "scraping",
       "legal_risk": "medium",
       "weight": 0.15,
       "url": "",
-      "description": "Мониторинг цен и акций дистрибьюторов-конкурентов. Включать только после юрзаключения."
+      "description": "Мониторинг цен и акций дистрибьюторов-конкурентов. Только публичные страницы, robots.txt и rate limit соблюдаются. Включается live-режимом (--live) при наличии config/competitors.json."
     }
   },
   "regions_priority": {

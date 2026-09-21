@@ -31,6 +31,11 @@ def sources_config() -> dict[str, Any]:
     return _load_json(CONFIG_DIR / "sources.json")
 
 
+@lru_cache(maxsize=1)
+def competitors_config() -> dict[str, Any]:
+    return _load_json(CONFIG_DIR / "competitors.json")
+
+
 def all_categories() -> list[dict[str, Any]]:
     return list(catalog().get("categories", []))
 

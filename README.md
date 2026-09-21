@@ -100,15 +100,20 @@ medax-radar/
 │   ├── 05_ROLES_BUDGET.md     роли и бюджет
 │   ├── 06_METRICS.md          метрики
 │   ├── 07_DEPLOYMENT.md       развёртывание
+│   ├── 08_HOSTING.md          выбор хостинга
+│   ├── 09_SHARED_HOSTING.md   деплой на shared-хостинг (CGI)
+│   ├── 10_MODULE2.md          модуль 2: включение и использование
 │   └── legal/                 пакет для юридического заключения (модуль 2)
 ├── config/
 │   ├── medax_catalog.json     каталог и услуги MedAX (ключевые слова)
+│   ├── competitors.json       allowlist и правила для модуля 2
 │   └── sources.json           источники, регионы, веса скоринга
 ├── data/samples/              синтетические демо-данные
 ├── medax_radar/               исходный код
 │   ├── ingestion/             адаптеры источников
 │   ├── net/                   rate limiter, robots.txt, HTTP-клиент
 │   ├── storage/               Repository: SQLite / PostgreSQL
+│   ├── extract.py             извлечение предложений (JSON-LD/microdata/regex)
 │   ├── models.py              доменные модели
 │   ├── normalize.py           нормализация и классификация
 │   ├── dedupe.py              дедупликация и отсечение конкурентов
@@ -179,13 +184,18 @@ docker compose -f docker-compose.prod.yml up -d --build
 Для продакшена можно переключиться на PostgreSQL: `MEDAX_DB_BACKEND=postgres`
 и `MEDAX_DATABASE_URL=postgresql://...`. Подробнее — `docs/07_DEPLOYMENT.md`.
 
-## Модуль 2 и юридическое заключение
+## Модуль 2 — радар конкуренции
 
-Парсинг сайтов конкурентов **не запускается** до письменного заключения юриста.
-Пакет документов для оценки — `docs/legal/`:
-бриф, ТЗ модуля 2, политика robots.txt/нагрузки, описание обработки данных и
-перечень вопросов к юристу. Технические предохранители (`robots.txt`,
-rate limiting, идентификация бота) уже реализованы в `medax_radar/net/`.
+Включён по решению владельца. Собираются только **публичные** страницы каталогов
+конкурентов с соблюдением `robots.txt`, rate limiting и allowlist доменов
+(`config/competitors.json`). Парсинг: JSON-LD / microdata / regex-фолбэк.
+
+```bash
+python run.py run --competitors --live --export          # живой сбор
+python run.py scrape https://competitor.ru/catalog/ --json  # одна страница
+```
+
+Юридические материалы — `docs/legal/`, описание модуля — `docs/10_MODULE2.md`.
 
 ## Принципы проекта
 

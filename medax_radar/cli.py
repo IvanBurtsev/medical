@@ -50,6 +50,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         include_competitors=args.competitors,
         reset=not args.no_reset,
         verbose=args.verbose,
+        live=args.live,
     )
     _print_summary(result)
     if not args.no_leads:
@@ -112,6 +113,27 @@ def cmd_validate(_: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_scrape(args: argparse.Namespace) -> int:
+    import json
+
+    from .ingestion.competitor import scrape_url
+
+    try:
+        offers = scrape_url(args.url, args.competitor, region=args.region)
+    except Exception as exc:  # noqa: BLE001
+        print(f"Ошибка сбора: {exc}")
+        return 1
+    if not offers:
+        print("Предложения не найдены (нет JSON-LD/microdata/цен).")
+        return 0
+    print(f"Найдено предложений: {len(offers)}")
+    for offer in offers[: args.limit]:
+        print(f"  - {offer['product_name'][:70]} — {offer['price']:,.0f} ₽")
+    if args.json:
+        print(json.dumps(offers, ensure_ascii=False, indent=2))
+    return 0
+
+
 def cmd_health(_: argparse.Namespace) -> int:
     db = create_repository()
     rows = db.source_health() if hasattr(db, "source_health") else []
@@ -144,7 +166,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--no-leads", action="store_true", help="Не печатать лиды")
     p_run.add_argument("--no-reset", action="store_true",
                        help="Не очищать хранилище (идемпотентный upsert)")
+    p_run.add_argument("--live", action="store_true",
+                       help="Live-сбор: парсинг сайтов конкурентов из config/competitors.json")
     p_run.set_defaults(func=cmd_run)
+
+    p_scrape = sub.add_parser("scrape",
+                              help="Разовый сбор публичной страницы конкурента (модуль 2)")
+    p_scrape.add_argument("url", help="Публичный URL каталога")
+    p_scrape.add_argument("--competitor", default="Неизвестный конкурент",
+                          help="Название конкурента")
+    p_scrape.add_argument("--region", default="", help="Регион конкурента")
+    p_scrape.add_argument("--limit", type=int, default=20, help="Сколько вывести")
+    p_scrape.add_argument("--json", action="store_true", help="Вывести JSON")
+    p_scrape.set_defaults(func=cmd_scrape)
 
     p_report = sub.add_parser("report", help="Сформировать отчёты из БД")
     p_report.set_defaults(func=cmd_report)
