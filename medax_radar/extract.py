@@ -14,6 +14,7 @@ import json
 import re
 from html.parser import HTMLParser
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 _JSONLD_RE = re.compile(
     r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
@@ -28,6 +29,34 @@ _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"[ \t]+")
 
 _PRODUCT_TYPES = {"Product", "IndividualProduct", "ProductModel"}
+
+#: Мусорные «товары» (виджеты лизинга, служебные подписи).
+_NOISE_RE = re.compile(
+    r"(лизинг|авансов|финансирован|минимальн|рассрочк|сумма\n|сумма |"
+    r"trade-?in|доставк|гаранти|скидк|под заказ|нет в продаже|цена по запросу|"
+    r"сравнени|добавить в корзину|обратный звонок)",
+    re.IGNORECASE,
+)
+
+_LINK_RE = re.compile(r'href=["\']([^"\'#]+)["\']', re.IGNORECASE)
+_SITEMAP_LOC_RE = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>", re.IGNORECASE)
+
+
+def parse_sitemap(xml: str) -> tuple[bool, list[str]]:
+    """Разбирает sitemap. Возвращает (это_индекс, список_url)."""
+    is_index = "<sitemapindex" in xml[:5000].lower()
+    return is_index, _SITEMAP_LOC_RE.findall(xml)
+
+
+def _is_product_type(node_type: Any) -> bool:
+    """True, если @type указывает на Product (в т.ч. полным URL schema.org)."""
+    types = node_type if isinstance(node_type, list) else [node_type]
+    for item in types:
+        if not isinstance(item, str):
+            continue
+        if item.rstrip("/").split("/")[-1].split("#")[-1] in _PRODUCT_TYPES:
+            return True
+    return False
 
 
 def strip_tags(html: str) -> str:
@@ -81,9 +110,7 @@ def _walk_jsonld(node: Any, out: list[dict]) -> None:
         for item in node:
             _walk_jsonld(item, out)
     elif isinstance(node, dict):
-        node_type = node.get("@type")
-        types = node_type if isinstance(node_type, list) else [node_type]
-        if any(t in _PRODUCT_TYPES for t in types if t):
+        if _is_product_type(node.get("@type")):
             name = node.get("name")
             price, currency, url = _offer_fields(node.get("offers"))
             if price is None:
@@ -219,10 +246,23 @@ def extract_offers(
 
     offers: list[dict] = []
     seen: set[tuple[str, int]] = set()
+    _emit(offers, seen, candidates, base_url, competitor, region, captured_at)
+    return offers
+
+
+def _emit(
+    offers: list[dict],
+    seen: set[tuple[str, int]],
+    candidates: list[dict],
+    base_url: str,
+    competitor: str,
+    region: str,
+    captured_at: str,
+) -> None:
     for item in candidates:
         name = str(item.get("product_name", "")).strip()
         price = float(item.get("price", 0))
-        if not name or price < 100:
+        if not name or price < 100 or _NOISE_RE.search(name):
             continue
         key = (name.lower(), int(price))
         if key in seen:
@@ -240,4 +280,34 @@ def extract_offers(
             "captured_at": captured_at,
             "promo": "",
         })
-    return offers
+
+
+def collect_links(
+    html: str,
+    base_url: str,
+    pattern: str | None = None,
+    exclude: str | None = None,
+    same_host: bool = True,
+    limit: int = 100,
+) -> list[str]:
+    """Собирает ссылки со страницы, отфильтрованные по regex, хосту и exclude."""
+    host = urlparse(base_url).netloc.lower()
+    rx = re.compile(pattern, re.IGNORECASE) if pattern else None
+    rx_exclude = re.compile(exclude, re.IGNORECASE) if exclude else None
+    result: list[str] = []
+    seen: set[str] = set()
+    for raw in _LINK_RE.findall(html):
+        url = urljoin(base_url, raw)
+        if same_host and urlparse(url).netloc.lower() != host:
+            continue
+        if rx and not rx.search(url):
+            continue
+        if rx_exclude and rx_exclude.search(url):
+            continue
+        if url in seen:
+            continue
+        seen.add(url)
+        result.append(url)
+        if len(result) >= limit:
+            break
+    return result

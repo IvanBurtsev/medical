@@ -1,35 +1,65 @@
 {
   "meta": {
-    "note": "Сайты конкурентов для модуля 2. Сбор только публичных страниц каталога. Обязательно соблюдаются robots.txt и rate limiting. Включайте сайт (enabled: true) только после проверки его robots.txt и по согласованию с юристом.",
+    "note": "Сайты конкурентов для модуля 2. Сбор только публичных страниц каталога. Обязательно соблюдаются robots.txt и rate limiting. live-обход выполняется отдельным заданием (cron), чтобы не нагружать веб-запросы.",
     "schema": {
       "name": "Название конкурента",
-      "base_url": "Корень сайта (используется для allowlist домена и robots.txt)",
-      "catalog_urls": "Список публичных URL каталога для обхода",
-      "region": "Регион конкурента (необязательно)",
-      "enabled": "true/false — участвует ли сайт в live-сборе"
+      "base_url": "Корень сайта (allowlist домена и robots.txt)",
+      "catalog_urls": "Публичные страницы-листинги каталога",
+      "region": "Регион (необязательно)",
+      "enabled": "Участвует ли сайт в live-сборе",
+      "follow_product_links": "Переходить ли на карточки товаров",
+      "product_link_pattern": "Regex ссылок на карточки",
+      "product_link_exclude": "Regex исключаемых (навигационных) ссылок",
+      "max_product_pages": "Максимум карточек на страницу-листинг"
     }
   },
   "allowlist_enforced": true,
-  "rate_limit_per_sec": 0.5,
-  "crawl_delay_respected": true,
+  "rate_limit_per_sec": 1.0,
   "sites": [
     {
-      "name": "Пример конкурента (замените)",
-      "base_url": "https://example-competitor-1.ru",
-      "catalog_urls": [
-        "https://example-competitor-1.ru/catalog/"
+      "name": "Dealmed",
+      "base_url": "https://dealmed.ru",
+      "catalog_urls": [],
+      "sitemap_urls": [
+        "https://www.dealmed.ru/sitemap-iblock-3.xml"
       ],
-      "region": "Ставропольский край",
-      "enabled": false
+      "region": "",
+      "enabled": true,
+      "follow_product_links": false,
+      "product_link_pattern": "\\.html$",
+      "max_product_pages": 40
     },
     {
-      "name": "Пример конкурента 2 (замените)",
-      "base_url": "https://example-competitor-2.ru",
+      "name": "MEDLIGA",
+      "base_url": "https://medliga.ru",
       "catalog_urls": [
-        "https://example-competitor-2.ru/catalog/stomatologiya/"
+        "https://medliga.ru/catalog/uzi-apparaty/"
       ],
-      "region": "Ростовская область",
-      "enabled": false
+      "region": "",
+      "enabled": true,
+      "follow_product_links": true,
+      "product_link_pattern": "/products/[^/]+/$",
+      "max_product_pages": 25
+    },
+    {
+      "name": "М.П.А. медицинские партнеры",
+      "base_url": "https://mpamed.ru",
+      "catalog_urls": [
+        "https://mpamed.ru/"
+      ],
+      "region": "",
+      "enabled": false,
+      "note": "Сайт отдаёт страницу анти-бот-защиты (noindex, noai). Сбор публичных страниц невозможен без браузерного рендеринга."
+    },
+    {
+      "name": "РТ-Медицинские технологии",
+      "base_url": "https://rt-mt.ru",
+      "catalog_urls": [
+        "https://rt-mt.ru/catalog/"
+      ],
+      "region": "Москва",
+      "enabled": false,
+      "note": "Каталог рендерится JavaScript; в HTML нет товаров и микроразметки. Требуется headless-браузер (Playwright/Skyvern) — отдельная задача."
     }
   ]
 }

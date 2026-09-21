@@ -65,6 +65,35 @@ python run.py run --competitors --export
   (добавляется в `extract.py` или через конфиг).
 - Юридическое заключение — `docs/legal/`.
 
+## Настроенные конкуренты
+
+| Конкурент | Сайт | Статус | Источник товаров |
+|---|---|---|---|
+| Dealmed | dealmed.ru | включён | sitemap-iblock-3.xml → карточки `.html` |
+| MEDLIGA | medliga.ru | включён | каталог → карточки `/products/…/` |
+| М.П.А. медицинские партнёры | mpamed.ru | выключен | анти-бот-защита, нужен браузер |
+| РТ-Медицинские технологии | rt-mt.ru | выключен | каталог рендерится JS |
+
+Для `dealmed` используется `sitemap_urls` (обход карточек по карте сайта),
+для `medliga` — `catalog_urls` + `follow_product_links`.
+
+### Пример результата live-прогона
+
+```
+Dealmed:  26 предложений
+MEDLIGA:  13 предложений
+```
+
+## Регламент запуска (важно)
+
+Live-сбор занимает ~1–2 минуты, поэтому он **не выполняется в веб-запросе**.
+Он запускается отдельным заданием (cron) и наполняет базу; дашборд только читает БД.
+
+```bash
+# ежедневно в 04:00
+0 4 * * * cd /path/to/app && python3 run.py run --competitors --live --export >> runtime/cron.log 2>&1
+```
+
 ## Тесты
 
 ```bash
@@ -72,4 +101,4 @@ python -m unittest tests.test_extract tests.test_competitor_live -v
 ```
 
 Проверяются: JSON-LD, microdata, regex-фолбэк, дедупликация, allowlist,
-запрет robots.txt и полный live-путь через локальный HTTP-сервер.
+запрет robots.txt, sitemap и полный live-путь через локальный HTTP-сервер.
