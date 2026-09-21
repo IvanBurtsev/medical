@@ -26,6 +26,11 @@ def _stem(token: str) -> str:
     return token[:5] if len(token) > 5 else token
 
 
+def _is_model_token(token: str) -> bool:
+    """Модель/артикул: содержит и буквы, и цифры (i9, b200, 100л)."""
+    return any(c.isdigit() for c in token) and any(c.isalpha() for c in token)
+
+
 def tokenize(name: str) -> set[str]:
     return {
         _stem(t) for t in _TOKEN_RE.findall(name.lower()) if t not in _STOP
@@ -55,8 +60,8 @@ def match_products(
             shared = our_tokens & their_tokens
             score = jaccard(our_tokens, their_tokens)
             # Совпадение считается надёжным, если общих токенов ≥ 2
-            # или есть общий «модельный» токен (содержит цифру).
-            model_shared = any(any(ch.isdigit() for ch in t) for t in shared)
+            # или есть общий «модельный» токен (буквы+цифры, напр. i9, b200).
+            model_shared = any(_is_model_token(t) for t in shared)
             if score >= threshold and (len(shared) >= 2 or model_shared):
                 if best is None or score > best[0]:
                     best = (score, offer)
