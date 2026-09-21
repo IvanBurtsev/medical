@@ -15,6 +15,8 @@ from pathlib import Path
 from . import config
 
 _TOKEN_RE = re.compile(r"[a-zа-яё0-9]{3,}")
+#: Порог высокой схожести (когда нет общего модельного токена).
+_STRONG_SIMILARITY = 0.5
 _STOP = {
     "для", "или", "the", "and", "с", "на", "по", "шт", "мм", "см", "мл", "гр",
     "комплект", "набор",
@@ -59,10 +61,12 @@ def match_products(
             their_tokens = tokenize(offer["product_name"])
             shared = our_tokens & their_tokens
             score = jaccard(our_tokens, their_tokens)
-            # Совпадение считается надёжным, если общих токенов ≥ 2
-            # или есть общий «модельный» токен (буквы+цифры, напр. i9, b200).
+            # Надёжное совпадение: общий «модельный» токен (буквы+цифры)
+            # либо высокая схожесть названий (>= strong). Иначе — пропуск,
+            # чтобы не ловить ложные пары по общим словам.
             model_shared = any(_is_model_token(t) for t in shared)
-            if score >= threshold and (len(shared) >= 2 or model_shared):
+            strong = _STRONG_SIMILARITY
+            if score >= threshold and (model_shared or score >= strong):
                 if best is None or score > best[0]:
                     best = (score, offer)
         if best is None:

@@ -52,12 +52,19 @@ class TestCompare(unittest.TestCase):
     def test_match_same_category(self) -> None:
         ours = [{"name": "Стоматологическая установка Mercury 330", "price": 157000,
                  "category": "dental_units"}]
-        theirs = [{"competitor": "K", "product_name": "Стоматологическая установка Basic Line B-200",
+        theirs = [{"competitor": "K", "product_name": "Стоматологическая установка Mercury 330 Classic",
                    "price": 200000, "category": "dental_units"}]
         matches = match_products(ours, theirs, threshold=0.2)
         self.assertEqual(len(matches), 1)
         self.assertEqual(matches[0]["cheaper"], "MedAX")
         self.assertEqual(matches[0]["diff"], -43000)
+
+    def test_generic_words_do_not_match(self) -> None:
+        ours = [{"name": "Спрей для смазки наконечников с насадкой",
+                 "price": 520, "category": "handpieces"}]
+        theirs = [{"competitor": "K", "product_name": "Наконечник насадка для костылей 19",
+                   "price": 150, "category": "handpieces"}]
+        self.assertEqual(match_products(ours, theirs), [])
 
     def test_no_cross_category_match(self) -> None:
         ours = [{"name": "Компрессор Mercury 70л", "price": 23500, "category": "compressors"}]
