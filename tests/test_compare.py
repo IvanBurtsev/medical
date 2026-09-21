@@ -70,7 +70,7 @@ class TestCompare(unittest.TestCase):
             {"name": "Компрессор Mercury 70л", "price": 23500, "category": "compressors"},
             {"name": "Компрессор Mercury 100л", "price": 41000, "category": "compressors"},
         ]
-        theirs = [{"competitor": "K", "product_name": "Компрессор AirPro 100л",
+        theirs = [{"competitor": "K", "product_name": "Компрессор Mercury 100л",
                    "price": 68000, "category": "compressors"}]
         report = build_report(ours, theirs, threshold=0.1)
         self.assertGreaterEqual(len(report["matches"]), 1)

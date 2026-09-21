@@ -51,9 +51,15 @@ def match_products(
         for offer in competitor_offers:
             if ours.get("category") and offer.get("category") != ours["category"]:
                 continue
-            score = jaccard(our_tokens, tokenize(offer["product_name"]))
-            if score >= threshold and (best is None or score > best[0]):
-                best = (score, offer)
+            their_tokens = tokenize(offer["product_name"])
+            shared = our_tokens & their_tokens
+            score = jaccard(our_tokens, their_tokens)
+            # Совпадение считается надёжным, если общих токенов ≥ 2
+            # или есть общий «модельный» токен (содержит цифру).
+            model_shared = any(any(ch.isdigit() for ch in t) for t in shared)
+            if score >= threshold and (len(shared) >= 2 or model_shared):
+                if best is None or score > best[0]:
+                    best = (score, offer)
         if best is None:
             continue
         score, offer = best
