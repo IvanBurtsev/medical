@@ -2,7 +2,9 @@
 """MedAX Radar — JSON API (CGI)."""
 import sys, os, json, traceback
 
-BASE = os.path.expanduser("~/medax-radar")
+BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_7m2k9x")
+if not os.path.isdir(BASE):
+    BASE = os.path.expanduser("~/medax-radar")
 sys.path.insert(0, BASE)
 
 

@@ -12,7 +12,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = PROJECT_ROOT / "config"
 DATA_DIR = PROJECT_ROOT / "data"
 SAMPLES_DIR = DATA_DIR / "samples"
-RUNTIME_DIR = PROJECT_ROOT / "runtime"
+#: Каталог для БД и отчётов. Можно вынести вне веб-корня через MEDAX_RUNTIME_DIR.
+RUNTIME_DIR = Path(os.environ.get("MEDAX_RUNTIME_DIR", PROJECT_ROOT / "runtime"))
 DB_PATH = RUNTIME_DIR / "medax_radar.db"
 
 
