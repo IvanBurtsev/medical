@@ -1,0 +1,16 @@
+{
+  "_note": "СИНТЕТИЧЕСКИЙ снимок каталога MedAX для офлайн-демонстрации сравнения цен.",
+  "generated_at": "2026-09-21T00:00:00+00:00",
+  "count": 9,
+  "products": [
+    {"name": "Стоматологическая установка Mercury 330 стандарт нижняя подача", "price": 157000, "currency": "RUB", "category": "dental_units", "url": "https://medaxgroup.ru/catalog/stomatologicheskie-ustanovki/"},
+    {"name": "Стоматологическая установка Ajax AJ11", "price": 420000, "currency": "RUB", "category": "dental_units", "url": "https://medaxgroup.ru/catalog/stomatologicheskie-ustanovki/"},
+    {"name": "Конусно-лучевой томограф Vatech", "price": 4100000, "currency": "RUB", "category": "ct_3d", "url": "https://medaxgroup.ru/catalog/3d-tomografy/"},
+    {"name": "Компрессор Mercury 100л усиленный", "price": 41000, "currency": "RUB", "category": "compressors", "url": "https://medaxgroup.ru/catalog/kompressory/"},
+    {"name": "Компрессор Mercury 70л", "price": 23500, "currency": "RUB", "category": "compressors", "url": "https://medaxgroup.ru/catalog/kompressory/"},
+    {"name": "Стерилизатор автоклав 23л класс B", "price": 118000, "currency": "RUB", "category": "sterilization", "url": "https://medaxgroup.ru/catalog/sterilizatsiya/"},
+    {"name": "Имплантат OSSTEM TSIII комплект", "price": 32000, "currency": "RUB", "category": "implantology", "url": "https://medaxgroup.ru/catalog/implantologiya/"},
+    {"name": "УЗИ аппарат Mindray Imagyn I9", "price": 3350000, "currency": "RUB", "category": "uzi", "url": "https://medaxgroup.ru/catalog/uzi-apparaty/"},
+    {"name": "Стоматологические светильники", "price": 36000, "currency": "RUB", "category": "dental_units", "url": "https://medaxgroup.ru/catalog/stomatologicheskie-ustanovki/"}
+  ]
+}

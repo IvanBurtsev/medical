@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "note": "Параметры live-сбора госзакупок с zakupki.gov.ru через официальный RSS поиска. Только открытые данные, соблюдается rate limiting."
+  },
+  "base_url": "https://zakupki.gov.ru/epz/order/extendedsearch/rss.html",
+  "morphology": true,
+  "fz44": true,
+  "fz223": false,
+  "queries": [
+    "стоматологическое оборудование",
+    "медицинское оборудование",
+    "ультразвуковой аппарат",
+    "рентгеновский аппарат",
+    "стерилизатор медицинский"
+  ],
+  "max_items_per_query": 20
+}

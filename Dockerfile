@@ -11,6 +11,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY config ./config
 COPY data ./data
+COPY certs ./certs
 COPY docs ./docs
 COPY medax_radar ./medax_radar
 COPY tests ./tests

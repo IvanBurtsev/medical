@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "note": "Категории каталога medaxgroup.ru для сбора собственного прайса и сравнения с конкурентами."
+  },
+  "base_url": "https://medaxgroup.ru",
+  "rate_limit_per_sec": 1.0,
+  "categories": {
+    "dental_units": "https://medaxgroup.ru/catalog/stomatologicheskie-ustanovki/",
+    "ct_3d": "https://medaxgroup.ru/catalog/3d-tomografy/",
+    "compressors": "https://medaxgroup.ru/catalog/kompressory/",
+    "sterilization": "https://medaxgroup.ru/catalog/sterilizatsiya/",
+    "uzi": "https://medaxgroup.ru/catalog/uzi-apparaty/",
+    "implantology": "https://medaxgroup.ru/catalog/implantologiya/",
+    "endo_perio": "https://medaxgroup.ru/catalog/endodontiya/",
+    "handpieces": "https://medaxgroup.ru/catalog/nakonechniki-i-mikromotory/",
+    "aspiration": "https://medaxgroup.ru/catalog/aspiratsiya/",
+    "furniture": "https://medaxgroup.ru/catalog/med-mebel/"
+  }
+}

@@ -33,19 +33,23 @@ MedAX Group — поставщик и интегратор медицинско�
 # 1. Полный цикл: сбор + скоринг + вывод лидов + экспорт отчётов
 python run.py run --competitors --export --verbose
 
-# 2. Только лиды
+# 2. Живые данные: реальные закупки + каталог конкурентов + сравнение цен
+python run.py run --competitors --live --export   # live-сбор
+python run.py compare --live                      # цены MedAX ↔ конкуренты
+
+# 3. Только лиды
 python run.py leads --limit 15
 
-# 3. Веб-дашборд
+# 4. Веб-дашборд
 python run.py dashboard --port 8080
 #   → http://127.0.0.1:8080
 
-# 4. Статус источников и проверка конфигурации
+# 5. Статус источников и проверка конфигурации
 python run.py sources
 python run.py health
 python run.py validate
 
-# 5. Тесты (без внешних зависимостей)
+# 6. Тесты (без внешних зависимостей)
 python -m unittest discover -s tests -v
 ```
 
@@ -103,7 +107,9 @@ medax-radar/
 │   ├── 08_HOSTING.md          выбор хостинга
 │   ├── 09_SHARED_HOSTING.md   деплой на shared-хостинг (CGI)
 │   ├── 10_MODULE2.md          модуль 2: включение и использование
+│   ├── 11_LIVE_DATA.md        живые данные: zakupki + сравнение цен
 │   └── legal/                 пакет для юридического заключения (модуль 2)
+├── certs/                     российский доверенный корневой CA
 ├── config/
 │   ├── medax_catalog.json     каталог и услуги MedAX (ключевые слова)
 │   ├── competitors.json       allowlist и правила для модуля 2

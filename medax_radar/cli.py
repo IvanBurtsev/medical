@@ -113,6 +113,57 @@ def cmd_validate(_: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_compare(args: argparse.Namespace) -> int:
+    import json
+
+    from . import compare, config
+
+    db = create_repository()
+    offers = db.competitor_offers()
+    db.close()
+
+    if args.live:
+        from .medax_catalog import scrape_catalog, snapshot
+
+        products = scrape_catalog()
+        if products:
+            path = config.RUNTIME_DIR / "medax_catalog.json"
+            path.write_text(json.dumps(snapshot(products), ensure_ascii=False, indent=2),
+                            encoding="utf-8")
+            print(f"Собрано товаров MedAX: {len(products)} → {path}")
+    else:
+        products = compare.load_medax_snapshot()
+
+    if not products:
+        print("Нет каталога MedAX. Запустите: python run.py compare --live")
+        return 1
+    if not offers:
+        print("Нет предложений конкурентов. Запустите: python run.py run --competitors --live")
+        return 1
+
+    report = compare.build_report(products, offers, threshold=args.threshold)
+    out_dir = config.RUNTIME_DIR / "reports"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "price_comparison.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    md = compare.render_markdown(report)
+    (out_dir / "price_comparison.md").write_text(md, encoding="utf-8")
+
+    print("=" * 62)
+    print(" Сравнение цен MedAX ↔ конкуренты")
+    print("=" * 62)
+    print(f"  Товаров MedAX:        {report['medax_products']}")
+    print(f"  Предложений конкурентов: {report['competitor_offers']}")
+    print(f"  Сопоставлено пар:     {len(report['matches'])}")
+    for row in report["positioning"]:
+        print(f"    {row['category']:<14} пар={row['pairs']:<3} "
+              f"Δ={row['delta_pct']:+.1f}%")
+    print("  Отчёт: runtime/reports/price_comparison.md")
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
 def cmd_scrape(args: argparse.Namespace) -> int:
     import json
 
@@ -169,6 +220,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--live", action="store_true",
                        help="Live-сбор: парсинг сайтов конкурентов из config/competitors.json")
     p_run.set_defaults(func=cmd_run)
+
+    p_cmp = sub.add_parser("compare",
+                           help="Сравнить цены MedAX и конкурентов")
+    p_cmp.add_argument("--live", action="store_true",
+                       help="Собрать каталог MedAX с medaxgroup.ru")
+    p_cmp.add_argument("--threshold", type=float, default=0.2,
+                       help="Порог схожести названий (0..1)")
+    p_cmp.add_argument("--json", action="store_true", help="Вывести JSON")
+    p_cmp.set_defaults(func=cmd_compare)
 
     p_scrape = sub.add_parser("scrape",
                               help="Разовый сбор публичной страницы конкурента (модуль 2)")

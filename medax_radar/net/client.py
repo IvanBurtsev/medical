@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import ssl
 import time
 import urllib.error
 import urllib.request
@@ -33,8 +34,16 @@ class HttpResponse:
     headers: dict[str, str] = field(default_factory=dict)
 
 
-def _default_opener(request: urllib.request.Request):
-    return urllib.request.urlopen(request, timeout=30)  # noqa: S310
+def make_opener(ssl_context: ssl.SSLContext | None = None):
+    """Создаёт opener, использующий заданный TLS-контекст."""
+
+    def opener(request: urllib.request.Request):
+        return urllib.request.urlopen(request, timeout=30, context=ssl_context)  # noqa: S310
+
+    return opener
+
+
+_default_opener = make_opener(None)
 
 
 class HttpClient:
@@ -45,16 +54,17 @@ class HttpClient:
         user_agent: str = "MedAXRadarBot/4.0",
         robots: RobotsCache | None = None,
         limiter: HostRateLimiter | None = None,
-        opener: Callable = _default_opener,
+        opener: Callable | None = None,
         retries: int = 3,
         backoff_base: float = 0.5,
         sleep: Callable[[float], None] = time.sleep,
         respect_robots: bool = True,
+        ssl_context: ssl.SSLContext | None = None,
     ) -> None:
         self.user_agent = user_agent
         self.robots = robots or RobotsCache(fetcher=lambda _url: None, user_agent=user_agent)
         self.limiter = limiter or HostRateLimiter()
-        self._opener = opener
+        self._opener = opener or make_opener(ssl_context)
         self.retries = max(1, retries)
         self.backoff_base = backoff_base
         self._sleep = sleep
