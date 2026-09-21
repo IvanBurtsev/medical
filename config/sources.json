@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "version": "4.0",
+    "product": "MedAX Radar",
+    "description": "Конфигурация источников, регионов приоритета и весов скоринга лидов."
+  },
+  "sources": {
+    "roszdravnadzor_licenses": {
+      "enabled": true,
+      "live": false,
+      "kind": "open_registry",
+      "legal_risk": "low",
+      "weight": 0.30,
+      "url": "https://roszdravnadzor.gov.ru/opendata",
+      "description": "Реестр лицензий на медицинскую деятельность. Новые лицензии = новые/расширяющиеся клиники."
+    },
+    "fns_companies": {
+      "enabled": true,
+      "live": false,
+      "kind": "open_registry",
+      "legal_risk": "low",
+      "weight": 0.20,
+      "url": "https://egrul.nalog.ru/",
+      "description": "Регистрация новых ЮЛ с ОКВЭД 86.x / 47.73. Сигнал появления новых клиник."
+    },
+    "zakupki_tenders": {
+      "enabled": true,
+      "live": false,
+      "kind": "open_registry",
+      "legal_risk": "low",
+      "weight": 0.35,
+      "url": "https://zakupki.gov.ru/",
+      "description": "Госзакупки 44-ФЗ/223-ФЗ на медицинское оборудование. Прямые возможности для MedAX."
+    },
+    "competitor_sites": {
+      "enabled": false,
+      "live": false,
+      "kind": "scraping",
+      "legal_risk": "medium",
+      "weight": 0.15,
+      "url": "",
+      "description": "Мониторинг цен и акций дистрибьюторов-конкурентов. Включать только после юрзаключения."
+    }
+  },
+  "regions_priority": {
+    "Ставропольский край": 1.0,
+    "Краснодарский край": 0.9,
+    "Ростовская область": 0.9,
+    "Республика Дагестан": 0.7,
+    "Кабардино-Балкарская Республика": 0.8,
+    "Карачаево-Черкесская Республика": 0.9,
+    "Республика Северная Осетия - Алания": 0.75,
+    "Чеченская Республика": 0.8,
+    "Ингушетия": 0.7,
+    "Республика Калмыкия": 0.7,
+    "Астраханская область": 0.7,
+    "Волгоградская область": 0.65,
+    "Республика Крым": 0.6,
+    "Москва": 0.5,
+    "Московская область": 0.5,
+    "Санкт-Петербург": 0.4,
+    "_default": 0.3
+  },
+  "scoring": {
+    "license_recency": {
+      "weight": 30,
+      "description": "Свежесть лицензии: чем новее, тем выше вероятность закупки оборудования.",
+      "half_life_days": 120
+    },
+    "tender_activity": {
+      "weight": 25,
+      "description": "Активные тендеры на медоборудование в регионе лида.",
+      "half_life_days": 45
+    },
+    "region_priority": {
+      "weight": 20,
+      "description": "Близость региона к базе MedAX (Ставрополь)."
+    },
+    "catalog_fit": {
+      "weight": 15,
+      "description": "Совпадение лицензируемых видов деятельности с категориями каталога MedAX."
+    },
+    "data_completeness": {
+      "weight": 10,
+      "description": "Полнота контактов и реквизитов для работы отдела продаж."
+    }
+  },
+  "lead_tiers": {
+    "hot": 75,
+    "warm": 50,
+    "cold": 0
+  }
+}

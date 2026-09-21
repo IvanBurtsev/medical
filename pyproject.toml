@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medax-radar"
+version = "4.0.0"
+description = "B2B-платформа рыночной разведки и коммерческих сигналов для MedAX Group"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "MedAX Group" }]
+keywords = ["competitive-intelligence", "lead-generation", "medical", "b2b"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Private :: Do Not Upload",
+]
+dependencies = []
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]>=3.1"]
+dev = ["ruff>=0.5", "mypy>=1.10"]
+
+[project.scripts]
+medax-radar = "medax_radar.cli:main"
+
+[project.urls]
+Homepage = "https://medaxgroup.ru/"
+
+[tool.setuptools]
+packages = ["medax_radar", "medax_radar.ingestion", "medax_radar.storage", "medax_radar.net"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["medax_radar", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RET", "ARG", "PTH"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG", "N802"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+disallow_untyped_defs = true
+no_implicit_optional = true
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["runtime/", "build/", "dist/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

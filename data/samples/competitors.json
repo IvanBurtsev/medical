@@ -1,0 +1,102 @@
+{
+  "_note": "СИНТЕТИЧЕСКИЕ тестовые данные. Названия конкурентов вымышлены, цены условны.",
+  "source": "competitor_sites",
+  "records": [
+    {
+      "competitor": "МедТехника Юг",
+      "product_name": "Стоматологическая установка Basic Line B-200",
+      "category": "dental_units",
+      "brand": "Basic Line",
+      "price": 429000,
+      "currency": "RUB",
+      "region": "Ставропольский край",
+      "url": "https://example-competitor-1.ru/b200",
+      "captured_at": "2026-09-15",
+      "promo": "-15% до 30.09"
+    },
+    {
+      "competitor": "МедТехника Юг",
+      "product_name": "Компрессор безмасляный 100л",
+      "category": "compressors",
+      "brand": "AirPro",
+      "price": 68000,
+      "currency": "RUB",
+      "region": "Ставропольский край",
+      "url": "https://example-competitor-1.ru/comp100",
+      "captured_at": "2026-09-15",
+      "promo": ""
+    },
+    {
+      "competitor": "Дентал Депо Ростов",
+      "product_name": "Конусно-лучевой томограф DentalScan X5",
+      "category": "ct_3d",
+      "brand": "DentalScan",
+      "price": 3890000,
+      "currency": "RUB",
+      "region": "Ростовская область",
+      "url": "https://example-competitor-2.ru/x5",
+      "captured_at": "2026-09-14",
+      "promo": "Рассрочка 0%"
+    },
+    {
+      "competitor": "Дентал Депо Ростов",
+      "product_name": "Имплантат системы Implantic Pro (комплект)",
+      "category": "implantology",
+      "brand": "Implantic Pro",
+      "price": 29900,
+      "currency": "RUB",
+      "region": "Ростовская область",
+      "url": "https://example-competitor-2.ru/implantic",
+      "captured_at": "2026-09-14",
+      "promo": ""
+    },
+    {
+      "competitor": "Юнидент Кавказ",
+      "product_name": "Стерилизатор автоклав 23л класс B",
+      "category": "sterilization",
+      "brand": "SteriClave",
+      "price": 129000,
+      "currency": "RUB",
+      "region": "Кабардино-Балкарская Республика",
+      "url": "https://example-competitor-3.ru/autoclave23",
+      "captured_at": "2026-09-13",
+      "promo": "Подарок: набор для ТО"
+    },
+    {
+      "competitor": "Юнидент Кавказ",
+      "product_name": "УЗИ аппарат портативный SonoLite 3",
+      "category": "uzi",
+      "brand": "SonoLite",
+      "price": 845000,
+      "currency": "RUB",
+      "region": "Кабардино-Балкарская Республика",
+      "url": "https://example-competitor-3.ru/sonolite3",
+      "captured_at": "2026-09-13",
+      "promo": ""
+    },
+    {
+      "competitor": "МедИмпорт Краснодар",
+      "product_name": "Наркозно-дыхательный аппарат NDA-500",
+      "category": "anesthesia",
+      "brand": "NDA",
+      "price": 1750000,
+      "currency": "RUB",
+      "region": "Краснодарский край",
+      "url": "https://example-competitor-4.ru/nda500",
+      "captured_at": "2026-09-12",
+      "promo": "Сервис 1 год бесплатно"
+    },
+    {
+      "competitor": "МедИмпорт Краснодар",
+      "product_name": "Рентгеновский аппарат Dental X-1",
+      "category": "xray",
+      "brand": "Dental X",
+      "price": 1180000,
+      "currency": "RUB",
+      "region": "Краснодарский край",
+      "url": "https://example-competitor-4.ru/dentalx1",
+      "captured_at": "2026-09-12",
+      "promo": ""
+    }
+  ]
+}

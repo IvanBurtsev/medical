@@ -1,0 +1,45 @@
+services:
+  medax-radar:
+    build: .
+    image: medax-radar:4.0.0
+    container_name: medax-radar
+    ports:
+      - "8080:8080"
+    environment:
+      MEDAX_HOST: "0.0.0.0"
+      MEDAX_PORT: "8080"
+      MEDAX_DB_BACKEND: "sqlite"
+      # Авторизация (пусто = доступ открыт; для сервера задайте значения):
+      MEDAX_AUTH_USER: "${MEDAX_AUTH_USER:-}"
+      MEDAX_AUTH_PASSWORD: "${MEDAX_AUTH_PASSWORD:-}"
+      # Для PostgreSQL раскомментируйте:
+      # MEDAX_DB_BACKEND: "postgres"
+      # MEDAX_DATABASE_URL: "postgresql://medax:medax@db:5432/medax"
+    volumes:
+      - ./runtime:/app/runtime
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('MEDAX_PORT','8080')+'/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Опциональный PostgreSQL для продакшена.
+  db:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: medax
+      POSTGRES_PASSWORD: medax
+      POSTGRES_DB: medax
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medax"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

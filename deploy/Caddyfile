@@ -1,0 +1,18 @@
+# Caddy: автоматический TLS (Let's Encrypt) + reverse proxy к дашборду.
+# Аутентификация выполняется самим приложением (HTTP Basic, env MEDAX_AUTH_*).
+{$MEDAX_DOMAIN} {
+	encode gzip
+	reverse_proxy medax-radar:8080
+
+	# Дополнительный уровень защиты на уровне прокси (раскомментировать при желании):
+	# basicauth {
+	#     medax $2a$14$REPLACE_WITH_BCRYPT_HASH
+	# }
+
+	header {
+		Strict-Transport-Security "max-age=31536000;"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+	}
+}

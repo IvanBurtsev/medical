@@ -1,0 +1,47 @@
+# Продакшн-стек: приложение + Caddy (TLS + reverse proxy).
+# Запуск:
+#   cp deploy/.env.prod.example .env
+#   заполнить .env
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  medax-radar:
+    build: .
+    image: medax-radar:4.0.0
+    environment:
+      MEDAX_HOST: "0.0.0.0"
+      MEDAX_PORT: "8080"
+      MEDAX_DB_BACKEND: "${MEDAX_DB_BACKEND:-sqlite}"
+      MEDAX_DATABASE_URL: "${MEDAX_DATABASE_URL:-}"
+      MEDAX_USER_AGENT: "${MEDAX_USER_AGENT:-MedAXRadarBot/4.0 (+https://medaxgroup.ru/)}"
+      MEDAX_AUTH_USER: "${MEDAX_AUTH_USER:?Задайте MEDAX_AUTH_USER в .env}"
+      MEDAX_AUTH_PASSWORD: "${MEDAX_AUTH_PASSWORD:?Задайте MEDAX_AUTH_PASSWORD в .env}"
+    volumes:
+      - ./runtime:/app/runtime
+    expose:
+      - "8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('MEDAX_PORT','8080')+'/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      MEDAX_DOMAIN: "${MEDAX_DOMAIN:?Задайте MEDAX_DOMAIN в .env}"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - medax-radar
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
