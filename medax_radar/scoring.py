@@ -121,4 +121,5 @@ def score_lead(
             "phone": clinic.phone,
             "email": clinic.email,
         },
+        sources=list(clinic.sources),
     )

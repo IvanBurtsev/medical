@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS leads (
     key TEXT PRIMARY KEY,
     name TEXT, region TEXT, city TEXT, score DOUBLE PRECISION, tier TEXT,
     reasons TEXT, signals TEXT, recommended_categories TEXT,
-    recommended_services TEXT, contacts TEXT
+    recommended_services TEXT, contacts TEXT, sources TEXT
 );
 CREATE TABLE IF NOT EXISTS run_meta (
     id INTEGER PRIMARY KEY,
@@ -68,7 +68,7 @@ _COLS: dict[str, tuple[str, ...]] = {
     ),
     "leads": (
         "key", "name", "region", "city", "score", "tier", "reasons",
-        "signals", "recommended_categories", "recommended_services", "contacts",
+        "signals", "recommended_categories", "recommended_services", "contacts", "sources",
     ),
 }
 

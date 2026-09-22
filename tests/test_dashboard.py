@@ -66,15 +66,19 @@ class TestFilters(unittest.TestCase):
     def test_filter_leads(self) -> None:
         leads = [
             {"name": "Клиника А", "region": "Ставропольский край", "city": "Ставрополь",
-             "tier": "hot", "recommended_categories": ["dental_units"]},
+             "tier": "hot", "recommended_categories": ["dental_units"],
+             "sources": ["zakupki_customers"]},
             {"name": "Клиника Б", "region": "Ростовская область", "city": "Ростов",
-             "tier": "cold", "recommended_categories": ["uzi"]},
+             "tier": "cold", "recommended_categories": ["uzi"],
+             "sources": ["roszdravnadzor_licenses"]},
         ]
         self.assertEqual(len(filter_leads(leads, {})), 2)
         self.assertEqual(len(filter_leads(leads, {"tier": "hot"})), 1)
         self.assertEqual(len(filter_leads(leads, {"region": "Ростовская область"})), 1)
         self.assertEqual(len(filter_leads(leads, {"q": "клиника а"})), 1)
         self.assertEqual(len(filter_leads(leads, {"category": "uzi"})), 1)
+        self.assertEqual(len(filter_leads(leads, {"source": "zakupki_customers"})), 1)
+        self.assertEqual(len(filter_leads(leads, {"source": "bogus"})), 0)
         self.assertEqual(len(filter_leads(leads, {"tier": "hot", "region": "Ростовская область"})), 0)
 
     def test_filter_tenders(self) -> None:
@@ -91,7 +95,8 @@ class TestRenderAndExport(unittest.TestCase):
         self.repo.save_lead(Lead(key="k1", name="Клиника А", region="Ставропольский край",
                                  city="Ставрополь", score=90, tier="hot",
                                  recommended_categories=["dental_units"], reasons=["тест"],
-                                 contacts={"phone": "+7"}))
+                                 contacts={"phone": "+7"},
+                                 sources=["zakupki_customers"]))
         self.repo.save_tender(Tender(reg_number="1", title="Поставка УЗИ", region="Ростовская область",
                                      customer="ГБУЗ", price=100000, matched_categories=["uzi"]))
         self.repo.commit()

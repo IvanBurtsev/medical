@@ -100,6 +100,7 @@ def _contains(text: str, needle: str) -> bool:
 def filter_leads(leads: list[dict], filters: dict) -> list[dict]:
     tier, region = filters.get("tier", ""), filters.get("region", "")
     category, query = filters.get("category", ""), filters.get("q", "")
+    source = filters.get("source", "")
     result = []
     for lead in leads:
         if tier and lead["tier"] != tier:
@@ -107,6 +108,8 @@ def filter_leads(leads: list[dict], filters: dict) -> list[dict]:
         if region and lead["region"] != region:
             continue
         if category and category not in lead["recommended_categories"]:
+            continue
+        if source and source not in (lead.get("sources") or []):
             continue
         if query and not (_contains(lead["name"], query)
                           or _contains(lead["region"], query)
@@ -163,6 +166,8 @@ def _filter_form(view: str, filters: dict, export_path: str) -> str:
             f'<option value="warm"{" selected" if filters.get("tier") == "warm" else ""}>WARM</option>'
             f'<option value="cold"{" selected" if filters.get("tier") == "cold" else ""}>COLD</option>'
             f'</select></label>')
+        fields.append('<label>Источник<select name="source">'
+                      f'<option value="">все</option></select></label>')
     if view == "competitors":
         fields.append('<label>Конкурент<select name="competitor">'
                       f'{_options([], filters.get("competitor", ""))}</select></label>')
@@ -208,6 +213,7 @@ def render_html(db: Repository, filters: dict | None = None,
         for v, l in cards
     )
 
+    source_values = sorted({s for lead in leads_all for s in lead.get("sources", [])})
     region_values = [x["region"] for x in leads_all + tenders_all if x.get("region")]
     competitor_values = [o["competitor"] for o in offers_all]
     filter_form = _filter_form(view, filters, export_path)
@@ -218,6 +224,9 @@ def render_html(db: Repository, filters: dict | None = None,
     filter_form = filter_form.replace(
         '<select name="competitor"><option value="">все</option></select>',
         f'<select name="competitor">{_options(competitor_values, filters.get("competitor", ""))}</select>')
+    filter_form = filter_form.replace(
+        '<select name="source"><option value="">все</option></select>',
+        f'<select name="source">{_options(source_values, filters.get("source", ""))}</select>')
 
     tabs = [
         ("leads", "Лиды"), ("tenders", "Тендеры"),
@@ -233,7 +242,7 @@ def render_html(db: Repository, filters: dict | None = None,
     if view == "leads":
         leads = filter_leads(leads_all, filters)
         rows = ""
-        for lead in leads:
+        for lead in leads[:300]:
             reasons = "<br>".join(html.escape(r) for r in lead["reasons"][:3])
             rows += (
                 f"<tr><td class='score'>{lead['score']}</td><td>{_badge(lead['tier'])}</td>"
@@ -242,7 +251,8 @@ def render_html(db: Repository, filters: dict | None = None,
                 f"<td>{_tags(lead['recommended_categories'])}</td>"
                 f"<td class='reasons'>{reasons}</td></tr>")
         body = (
-            f"<h2>Лиды — показано {len(leads)} из {len(leads_all)}</h2>"
+            f"<h2>Лиды — показано {min(len(leads), 300)} из {len(leads_all)}"
+            f"{' (первые 300)' if len(leads) > 300 else ''}</h2>"
             "<table><tr><th>Балл</th><th>Уровень</th><th>Организация</th>"
             "<th>Категории каталога</th><th>Обоснование</th></tr>"
             f"{rows or '<tr><td colspan=5>Нет данных</td></tr>'}</table>")
@@ -329,13 +339,14 @@ def export_csv(db: Repository, type_: str, filters: dict | None = None) -> tuple
     writer = csv.writer(buffer, delimiter=";")
     if type_ == "leads":
         writer.writerow(["score", "tier", "name", "region", "city", "phone", "email",
-                         "categories", "reasons"])
+                         "categories", "reasons", "sources"])
         for lead in filter_leads(db.leads(), filters):
             writer.writerow([lead["score"], lead["tier"], lead["name"], lead["region"],
                              lead["city"], lead["contacts"].get("phone", ""),
                              lead["contacts"].get("email", ""),
                              ", ".join(lead["recommended_categories"]),
-                             " | ".join(lead["reasons"])])
+                             " | ".join(lead["reasons"]),
+                             ", ".join(lead.get("sources") or [])])
     elif type_ == "tenders":
         writer.writerow(["published_at", "region", "price", "title", "customer", "url"])
         for t in filter_tenders(db.tenders(), filters):

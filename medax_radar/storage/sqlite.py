@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS leads (
     key TEXT PRIMARY KEY,
     name TEXT, region TEXT, city TEXT, score REAL, tier TEXT,
     reasons TEXT, signals TEXT, recommended_categories TEXT,
-    recommended_services TEXT, contacts TEXT
+    recommended_services TEXT, contacts TEXT, sources TEXT
 );
 CREATE TABLE IF NOT EXISTS run_meta (
     id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -64,11 +64,11 @@ _OFFER_COLS = (
 )
 _LEAD_COLS = (
     "key", "name", "region", "city", "score", "tier", "reasons",
-    "signals", "recommended_categories", "recommended_services", "contacts",
+    "signals", "recommended_categories", "recommended_services", "contacts", "sources",
 )
 _LEAD_JSON = (
     "reasons", "signals", "recommended_categories",
-    "recommended_services", "contacts",
+    "recommended_services", "contacts", "sources",
 )
 
 
@@ -82,7 +82,18 @@ class SQLiteRepository(Repository):
         self.conn = sqlite3.connect(self.path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
+        self._migrate()
         self.conn.commit()
+
+    def _migrate(self) -> None:
+        """Добавляет колонки, отсутствующие в старой схеме (версирование без ALTER IF EXISTS)."""
+        for col_sql in [
+            "ALTER TABLE leads ADD COLUMN sources TEXT",
+        ]:
+            try:
+                self.conn.execute(col_sql)
+            except sqlite3.OperationalError:
+                pass
 
     # --- низкий уровень ---------------------------------------------------
     def _exec(self, query: str, params: tuple = ()):

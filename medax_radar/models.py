@@ -89,6 +89,7 @@ class Lead:
     recommended_categories: list[str] = field(default_factory=list)
     recommended_services: list[str] = field(default_factory=list)
     contacts: dict[str, str] = field(default_factory=dict)
+    sources: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
