@@ -82,6 +82,7 @@ class SQLiteRepository(Repository):
         self.conn = sqlite3.connect(self.path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
+        self.conn.execute("PRAGMA journal_mode=wal")
         self._migrate()
         self.conn.commit()
 
