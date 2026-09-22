@@ -152,8 +152,52 @@ class ZakupkiAdapter(SourceAdapter):
                 if item["reg_number"] in seen:
                     continue
                 seen.add(item["reg_number"])
+                if cfg.get("enrich_tenders", True):
+                    self._enrich_card(item, client)
                 records.append(RawRecord("tender", self.source_key, item))
         return records
+
+    @staticmethod
+    def _enrich_card(item: dict, client) -> None:
+        """Достаёт регион, ОКПД2 и дату окончания из карточки закупки."""
+        url = item.get("url", "")
+        if not url or not url.startswith("http"):
+            return
+        try:
+            html = client.get(url).text
+        except Exception:  # noqa: BLE001 - карточка может быть недоступна
+            return
+
+        def info(label: str, tag: str = "section__info") -> str:
+            m = re.search(
+                rf'{label}[^<]*</span>\s*<span[^>]*class="{tag}"[^>]*>\s*([^<]+)',
+                html, re.S | re.I,
+            )
+            return re.sub(r"\s+", " ", m.group(1)).strip() if m else ""
+
+        addr = info("Место поставки")
+        if addr:
+            # "Российская Федерация, обл. Кировская, г. Киров ..." -> "Кировская область"
+            parts = [p.strip() for p in addr.split(",")]
+            if len(parts) > 1:
+                region = parts[1]
+                obj_match = re.match(r"^обл\.\s*(.*)$", region, re.I)
+                if obj_match:
+                    region = obj_match.group(1).strip().capitalize() + " область"
+                if 3 < len(region) < 50 and region.lower() not in ("россия", "рф"):
+                    item["region"] = region
+
+        deadline = info("Дата и время окончания") or info("Окончание подачи")
+        if deadline:
+            # "29.09.2026 09:00 ..." -> normalise
+            item["deadline_at"] = deadline.split()[0] if deadline else ""
+
+        # customer from section "Информация о заказчике"
+        cust_match = re.search(r'Информация о заказчике.*?</h2>\s*<div[^>]*>\s*([^<]{5,100})', html, re.S | re.I)
+        if cust_match:
+            cust = re.sub(r"\s+", " ", cust_match.group(1)).strip()
+            if cust and len(cust) > len(item.get("customer", "")):
+                item["customer"] = cust
 
     @staticmethod
     def _build_client(cfg: dict):

@@ -10,5 +10,6 @@
     "стоматологическое оборудование",
     "медицинское оборудование"
   ],
-  "max_items_per_query": 25
+  "max_items_per_query": 25,
+  "enrich_tenders": true
 }
