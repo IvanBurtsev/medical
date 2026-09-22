@@ -153,7 +153,13 @@ class ZakupkiAdapter(SourceAdapter):
                     continue
                 seen.add(item["reg_number"])
                 if cfg.get("enrich_tenders", True):
-                    self._enrich_card(item, client)
+                    try:
+                        self._enrich_card(item, client)
+                        if item.get("region"):
+                            logger.info("закупка %s: регион %s", item["reg_number"], item["region"])
+                    except Exception as exc:  # noqa: BLE001 - карточка необязательна
+                        logger.warning("Не удалось обогатить карточку %s: %s",
+                                       item.get("reg_number"), exc)
                 records.append(RawRecord("tender", self.source_key, item))
         return records
 

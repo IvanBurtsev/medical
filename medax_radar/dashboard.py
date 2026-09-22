@@ -73,6 +73,16 @@ form.filters button{background:#21a0ff;color:#04101c;border:0;padding:8px 16px;b
 font-weight:700;cursor:pointer}
 form.filters a.export{color:#9fc0e0;font-size:13px;text-decoration:none;padding:8px 12px;
 border:1px solid #2a3947;border-radius:8px}
+@media(max-width:700px){
+.wrap{padding:14px}header{padding:14px 16px}header h1{font-size:16px}
+.cards{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+nav.tabs a{font-size:12px;padding:6px 10px}
+form.filters{flex-direction:column}
+form.filters label{min-width:100%;margin-bottom:6px}
+form.filters input,form.filters select{min-width:auto;width:100%}
+.card .n{font-size:20px}
+table{font-size:12px}th,td{padding:7px 8px}
+}
 """
 
 
