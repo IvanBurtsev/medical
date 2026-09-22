@@ -74,6 +74,22 @@ def _clinic_from_company(payload: dict[str, Any]) -> Clinic:
     )
 
 
+def _clinic_from_tender(tender: Tender) -> Clinic:
+    """Лид из заказчика госзакупки — реальный покупатель оборудования."""
+    names = {c["id"]: c["name"] for c in config.all_categories()}
+    activities = [names.get(c, c) for c in tender.matched_categories]
+    return Clinic(
+        key=clinic_key(tender.customer, tender.customer_inn, tender.region),
+        name=tender.customer,
+        inn=tender.customer_inn,
+        region=tender.region,
+        city=tender.city,
+        activities=activities,
+        sources=["zakupki_customers"],
+        source_urls=[tender.url],
+    )
+
+
 def _tender_from_payload(payload: dict[str, Any]) -> Tender:
     tender = Tender(
         reg_number=clean_text(payload.get("reg_number")),
@@ -157,7 +173,10 @@ def _collect(include_competitors: bool, live: bool = False) -> tuple[list[Clinic
                     continue
                 clinics_raw.append(candidate)
             elif record.type == "tender":
-                tenders.append(_tender_from_payload(record.payload))
+                tender = _tender_from_payload(record.payload)
+                tenders.append(tender)
+                if tender.customer:
+                    clinics_raw.append(_clinic_from_tender(tender))
             elif record.type == "competitor":
                 offers.append(_offer_from_payload(record.payload))
 

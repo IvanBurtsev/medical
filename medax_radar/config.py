@@ -47,6 +47,11 @@ def medax_site_config() -> dict[str, Any]:
     return _load_json(CONFIG_DIR / "medax_site.json")
 
 
+@lru_cache(maxsize=1)
+def roszdravnadzor_config() -> dict[str, Any]:
+    return _load_json(CONFIG_DIR / "roszdravnadzor.json")
+
+
 def all_categories() -> list[dict[str, Any]]:
     return list(catalog().get("categories", []))
 

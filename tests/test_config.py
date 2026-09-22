@@ -58,6 +58,18 @@ class TestDedupeMerge(unittest.TestCase):
         self.assertEqual(merged[0].sources, ["s1", "s2"])
 
 
+class TestActiveBuyerScoring(unittest.TestCase):
+    def test_tender_customer_gets_bonus(self) -> None:
+        base = dict(key="k", name="ГБУЗ", region="Ростовская область", city="Ростов",
+                    phone="+7")
+        regular = Clinic(**base, sources=["roszdravnadzor_licenses"])
+        buyer = Clinic(**base, sources=["zakupki_customers"])
+        regular_lead = score_lead(regular, ["uzi"], [], [])
+        buyer_lead = score_lead(buyer, ["uzi"], [], [])
+        self.assertGreater(buyer_lead.score, regular_lead.score)
+        self.assertIn("active_buyer", buyer_lead.signals)
+
+
 class TestScoring(unittest.TestCase):
     def test_score_bounds_and_tier(self) -> None:
         clinic = Clinic(key="k", name="N", region="Ставропольский край",

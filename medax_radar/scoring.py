@@ -90,6 +90,13 @@ def score_lead(
     if clean_text(clinic.phone) or clean_text(clinic.email):
         signals.append("has_contacts")
 
+    # 6. Активный покупатель (заказчик госзакупки)
+    w_buyer = weights.get("active_buyer", {}).get("weight", 0)
+    if "zakupki_customers" in clinic.sources:
+        total += w_buyer
+        reasons.append("Активный покупатель: участвует в госзакупках")
+        signals.append("active_buyer")
+
     score = round(min(total, 100.0), 1)
     tiers = config.lead_tiers()
     if score >= tiers.get("hot", 75):
