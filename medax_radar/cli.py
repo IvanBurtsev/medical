@@ -185,6 +185,13 @@ def cmd_scrape(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_notify(_: argparse.Namespace) -> int:
+    from . import notifier
+
+    notifier.notify()
+    return 0
+
+
 def cmd_health(_: argparse.Namespace) -> int:
     db = create_repository()
     rows = db.source_health() if hasattr(db, "source_health") else []
@@ -257,6 +264,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_val = sub.add_parser("validate", help="Проверить конфигурацию проекта")
     p_val.set_defaults(func=cmd_validate)
+
+    p_notify = sub.add_parser("notify", help="Отправить Telegram-дайджест (задать TELEGRAM_BOT_TOKEN)")
+    p_notify.set_defaults(func=cmd_notify)
 
     p_health = sub.add_parser("health", help="Показать состояние источников")
     p_health.set_defaults(func=cmd_health)
